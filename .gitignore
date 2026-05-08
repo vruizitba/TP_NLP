@@ -216,3 +216,14 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Project context (academic — not for submission)
+context/
+
+# Data — track folders via .gitkeep but ignore contents
+data/raw/**
+!data/raw/**/.gitkeep
+
+# macOS
+.DS_Store
+

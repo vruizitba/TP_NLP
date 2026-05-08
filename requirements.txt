@@ -1,0 +1,32 @@
+# Core
+jupyter
+notebook
+ipykernel
+pandas
+numpy
+
+# Data acquisition
+requests
+beautifulsoup4
+lxml
+pdfplumber
+pandas-datareader
+
+# NLP / classical ML
+scikit-learn
+nltk
+gensim
+
+# Visualization
+matplotlib
+seaborn
+
+# Transformers
+torch
+transformers
+datasets
+accelerate
+
+# Utilities
+tqdm
+python-dotenv
