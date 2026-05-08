@@ -221,8 +221,10 @@ __marimo__/
 context/
 
 # Data — track folders via .gitkeep but ignore contents
-data/raw/**
-!data/raw/**/.gitkeep
+data/raw/minutes/*
+!data/raw/minutes/.gitkeep
+data/raw/rates/*
+!data/raw/rates/.gitkeep
 
 # macOS
 .DS_Store
