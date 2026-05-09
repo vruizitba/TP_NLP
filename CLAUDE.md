@@ -11,12 +11,34 @@ Academic NLP project (ITBA, 2do cuatrimestre 2026). Group submission for the cou
 **Corpus:**
 - FOMC minutes (English) from federalreserve.gov — current calendar 2021–2027 + historical archive 1936–2020.
 - Federal funds target rate from FRED (St. Louis Fed): series `DFEDTAR` (pre-2008), `DFEDTARU` / `DFEDTARL` (post-2008 range regime). Labels are derived from the rate change between consecutive meetings.
-- ~190 documents, average ~8000 words each. Class distribution tracks known monetary regimes (`hold` dominates 2009–2015 and 2020–2021; `hike` in 2004–2006 and 2022–2023; `cut` in 2001, 2007–2008, 2019–2020).
+- **193 documents** (2000–2023), average ~8000 words each. Class distribution tracks known monetary regimes (`hold` dominates 2009–2015 and 2020–2021; `hike` in 2004–2006 and 2022–2023; `cut` in 2001, 2007–2008, 2019–2020).
 - Known issue: stylistic drift around 2005 when FOMC began publishing more debate detail — controlling for epoch matters for generalization.
+- 884 total minutes in `data/raw/minutes/` (1936–2023) but only 2000–2023 are used.
 
 ## Status of the work
 
-**Data prep phase right now.** No model code yet — only scaffolding.
+**Current phase: preprocessing + EDA.** Minutes scraped (193 docs in `data/raw/minutes/`). FRED rates not yet fetched. Second delivery (sección 6 Experimentos) submitted 2026-05-11.
+
+**Chronological split (fixed):**
+- Train: 2000–2018 → 153 docs
+- Val: 2019–2020 → 16 docs
+- Test: 2021–2023 → 24 docs
+
+**Experiment plan (locked for 2da entrega):**
+1. TF-IDF + logistic regression (baseline interpretable)
+2. Loughran-McDonald lexicon (6 tone features) + logistic regression
+3. Word2Vec mean pooling (dim 300, GoogleNews-300) + logistic regression
+4a. FinBERT feature extraction ([CLS] frozen, dim 768) + logistic regression
+4b. FinBERT fine-tuning (AdamW lr=2e-5, early stopping on F1-macro, class weights)
+
+**Next steps in order:**
+1. `02_preprocessing.ipynb` — fetch FRED rates, align with minutes dates, build labels (hike/cut/hold), output `data/processed/fomc_dataset.parquet`
+2. `03_eda.ipynb` — class distribution, doc length, vocabulary per class, temporal drift, Loughran-McDonald descriptive analysis
+3. Modelling notebooks (to be created: `04_tfidf.ipynb`, `05_lm_lexicon.ipynb`, `06_word2vec.ipynb`, `07_finbert.ipynb`)
+
+**Delivery dates:**
+- 2da entrega (sección 6): 2026-05-11 ✓
+- Entrega final (presentación): 2026-06-22
 
 ## Repo layout
 
@@ -77,7 +99,7 @@ When writing modelling code: **first** look at the matching consolidated noteboo
 ## Working conventions for this repo
 
 - Language: Spanish for prose (informe, comments aimed at the team), English for code identifiers and docstrings.
-- The dataset is tiny (~190 docs). Model complexity must stay justifiable — do not introduce architectures the data cannot support without explicit discussion.
+- The dataset is 193 docs (153 train / 16 val / 24 test). Model complexity must stay justifiable — do not introduce architectures the data cannot support without explicit discussion.
 - Time-aware splitting matters because of the linguistic drift around 2005 and the regime structure of the labels. Random splits will leak; chronological or grouped splits are the default.
 - Stopwords plus domain-generic terms (`committee`, `meeting`, `board`, `federal`, `reserve`) are removed before TF-IDF / lexical analysis.
 - Metric reporting should match what the cathedra notebooks use (typically accuracy + macro-F1 + per-class precision/recall/F1 and a confusion matrix); follow the notebook style rather than inventing new evaluation conventions.
