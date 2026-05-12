@@ -32,7 +32,7 @@ Academic NLP project (ITBA, 2do cuatrimestre 2026). Group submission for the cou
 4b. FinBERT fine-tuning (AdamW lr=2e-5, early stopping on F1-macro, class weights)
 
 **Next steps in order:**
-1. `02_preprocessing.ipynb` — fetch FRED rates, align with minutes dates, build labels (hike/cut/hold), output `data/processed/fomc_dataset.parquet`
+1. `02_preprocessing.ipynb` — fetch FRED rates, align with minutes dates, build labels (hike/cut/hold), output `data/processed/fomc_dataset.csv`
 2. `03_eda.ipynb` — class distribution, doc length, vocabulary per class, temporal drift, Loughran-McDonald descriptive analysis
 3. Modelling notebooks (to be created: `04_tfidf.ipynb`, `05_lm_lexicon.ipynb`, `06_word2vec.ipynb`, `07_finbert.ipynb`)
 

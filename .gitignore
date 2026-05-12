@@ -225,6 +225,8 @@ context/
 #!data/raw/minutes/.gitkeep
 #data/raw/rates/*
 #!data/raw/rates/.gitkeep
+data/raw/lexicons/*.csv
+!data/raw/lexicons/.gitkeep
 
 # macOS
 .DS_Store
