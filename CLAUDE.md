@@ -17,24 +17,35 @@ Academic NLP project (ITBA, 2do cuatrimestre 2026). Group submission for the cou
 
 ## Status of the work
 
-**Current phase: preprocessing + EDA.** Minutes scraped (193 docs in `data/raw/minutes/`). FRED rates not yet fetched. Second delivery (sección 6 Experimentos) submitted 2026-05-11.
+**Current phase: modelling.** Preprocessing and EDA are complete. `data/processed/fomc_dataset.csv` (193 docs) and `reports/figures/` (8 figures) are committed. Second delivery (sección 6 Experimentos) submitted 2026-05-11.
 
 **Chronological split (fixed):**
 - Train: 2000–2018 → 153 docs
 - Val: 2019–2020 → 16 docs
 - Test: 2021–2023 → 24 docs
 
+**Key EDA findings (locked):**
+- `hold` = 131 (67.88%), `hike` = 39, `cut` = 23 → F1-macro is the primary metric
+- 100% of docs > 512 words → FinBERT requires explicit truncation strategy
+- Jaccard drift pre/post-2005 = 0.538 → chronological split is mandatory
+- LM Negative score: `cut`=0.0458 vs `hike`=0.0263 (74% higher) → Exp 2 has real signal
+
 **Experiment plan (locked for 2da entrega):**
-1. TF-IDF + logistic regression (baseline interpretable)
-2. Loughran-McDonald lexicon (6 tone features) + logistic regression
-3. Word2Vec mean pooling (dim 300, GoogleNews-300) + logistic regression
-4a. FinBERT feature extraction ([CLS] frozen, dim 768) + logistic regression
-4b. FinBERT fine-tuning (AdamW lr=2e-5, early stopping on F1-macro, class weights)
+1. **TF-IDF + logistic regression** — `ngram_range=(1,2)`, `max_features=10000`, `sublinear_tf=True`; LogReg L2, C ∈ {0.01, 0.1, 1, 10} grid search on val.
+2. **Loughran-McDonald lexicon + logistic regression** — 6 tone scores (Positive, Negative, Uncertainty, Litigious, Strong Modal, Weak Modal) as 6D features; same LogReg setup.
+3. **Word2Vec mean pooling + logistic regression** — GoogleNews-300 pretrained vectors, mean pooling ignoring OOV tokens, dim=300; LogReg C tuned on val.
+4a. **FinBERT feature extraction** — `ProsusAI/finbert`, [CLS] frozen, dim=768 → LogReg.
+4b. **FinBERT fine-tuning** — `ProsusAI/finbert` + linear classification head; lr ∈ {1e-5, 2e-5, 5e-5}, batch ∈ {4, 8, 16}, max 5 epochs, early stopping on F1-macro, class weights inversely proportional to frequency.
+
+**FinBERT truncation strategies** (evaluated empirically on val, choose best):
+- *Head+tail*: first 256 + last 256 tokens per doc.
+- *Chunking with mean pooling*: split into 512-token chunks (optional overlap), average [CLS] embeddings.
 
 **Next steps in order:**
-1. `02_preprocessing.ipynb` — fetch FRED rates, align with minutes dates, build labels (hike/cut/hold), output `data/processed/fomc_dataset.csv`
-2. `03_eda.ipynb` — class distribution, doc length, vocabulary per class, temporal drift, Loughran-McDonald descriptive analysis
-3. Modelling notebooks (to be created: `04_tfidf.ipynb`, `05_lm_lexicon.ipynb`, `06_word2vec.ipynb`, `07_finbert.ipynb`)
+1. `04_tfidf.ipynb` — Exp 1: TF-IDF + LogReg
+2. `05_lm_lexicon.ipynb` — Exp 2: LM scores + LogReg
+3. `06_word2vec.ipynb` — Exp 3: Word2Vec mean pooling + LogReg
+4. `07_finbert.ipynb` — Exp 4a + 4b: FinBERT feature extraction + fine-tuning
 
 **Delivery dates:**
 - 2da entrega (sección 6): 2026-05-11 ✓
@@ -71,12 +82,7 @@ python -m ipykernel install --user --name tp_nlp
 
 **Data folder tracking:** `data/raw/` keeps its structure via `.gitkeep` but contents are gitignored (scraped minutes are bulky and re-derivable from `01_data_acquisition.ipynb`). `data/processed/` is tracked so the final labelled dataset is reproducible across team members without re-scraping.
 
-The first delivery (`context/1er Entrega - NLP.md`) proposed three baselines:
-1. TF-IDF + logistic regression (interpretable baseline).
-2. Loughran-McDonald financial lexicon → tone scores → classifier.
-3. Word2Vec (financial corpus) averaged embeddings + logistic regression.
-
-**Important — direction change since the first delivery:** the planned modelling section was deliberately vague and did not include transformers. The current direction is to **add a transformer-based experiment** (BERT fine-tuning and/or feature extraction, encoder-only) on top of the three baselines above. Treat the first-delivery modelling proposal as a starting point only, not a constraint. The transformer work should follow the patterns shown in the cathedra notebooks (see below).
+The combined first+second delivery (`context/Entrega_1_2_NLP .md` / `.pdf`) defines the full experiment plan including the FinBERT extension. Treat this document as the authoritative spec for all modelling decisions.
 
 ## Reference material (gitignored under `context/`)
 
@@ -84,7 +90,7 @@ The `context/` folder holds everything not for submission and is in `.gitignore`
 
 Suggested layout for each member's local `context/`:
 
-- `context/1er Entrega - NLP.md` / `.pdf` — the submitted first-delivery report. Defines problem, data sources, EDA expectations, and the (now-superseded) baseline plan.
+- `context/Entrega_1_2_NLP .md` / `.pdf` — combined first + second delivery report. Defines problem, data sources, EDA results, and the full locked experiment plan (Exp 1–4b).
 - `context/Consignas TP y Examen NLP (compartido).pdf` — official course rubric. Three deliveries (informe → experimentos → exposición final), notebook cuestionarios, and the final exam are graded separately.
 - `context/Diapos/` — course slides (PDFs). Most relevant for this TP: `06-Transformers.pdf`, `07-BERT.pdf`, `08-TransferLearning.pdf`, `05-LMs.pdf`, `NLP - Clasificación con NNs.pdf`, `NLP - Clasificación y Evaluación.pdf`, `NLP - EDA + Clasificación.pdf`.
 - `context/notebooks/` — consolidated cathedra notebooks (the canonical version). Use these as the **template for any modelling code we write**:
