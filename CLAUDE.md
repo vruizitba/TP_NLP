@@ -10,25 +10,31 @@ Academic NLP project (ITBA, 2do cuatrimestre 2026). Group submission for the cou
 
 **Corpus:**
 - FOMC minutes (English) from federalreserve.gov — current calendar 2021–2027 + historical archive 1936–2020.
-- Federal funds target rate from FRED (St. Louis Fed): series `DFEDTAR` (pre-2008), `DFEDTARU` / `DFEDTARL` (post-2008 range regime). Labels are derived from the rate change between consecutive meetings.
-- **193 documents** (2000–2023), average ~8000 words each. Class distribution tracks known monetary regimes (`hold` dominates 2009–2015 and 2020–2021; `hike` in 2004–2006 and 2022–2023; `cut` in 2001, 2007–2008, 2019–2020).
+- Federal funds target rate from FRED (St. Louis Fed): series `DFEDTAR` (pre-2008), `DFEDTARU` / `DFEDTARL` (post-2008 range regime). Labels are derived from the rate change **before vs after each meeting** (not between consecutive meetings — that lagged the label by one meeting; fixed in `02_preprocessing.ipynb`).
+- **209 documents** (2000–2025), average ~8000 words each. Class distribution tracks known monetary regimes (`hold` dominates 2009–2015 and 2020–2021; `hike` in 2004–2006 and 2022–2023; `cut` in 2001, 2007–2008, 2019–2020, 2024–2025).
 - Known issue: stylistic drift around 2005 when FOMC began publishing more debate detail — controlling for epoch matters for generalization.
-- 884 total minutes in `data/raw/minutes/` (1936–2023) but only 2000–2023 are used.
+- 884 total minutes in `data/raw/minutes/` (1936–2026) but only 2000–2025 are used.
 
 ## Status of the work
 
-**Current phase: modelling.** Preprocessing and EDA are complete. `data/processed/fomc_dataset.csv` (193 docs) and `reports/figures/` (8 figures) are committed. Second delivery (sección 6 Experimentos) submitted 2026-05-11.
+**Current phase: modelling.** Preprocessing and EDA complete. Corpus extended to 2000–2025 and labels corrected (see Corpus note). `data/processed/fomc_dataset.csv` (209 docs) and `reports/figures/` (8 figures) committed. Exp 1 (TF-IDF) and Exp 2 (LM lexicon) done; Exp 3–4 pending. Second delivery (sección 6 Experimentos) submitted 2026-05-11; final presentation 2026-06-22.
 
-**Chronological split (fixed):**
-- Train: 2000–2018 → 153 docs
-- Val: 2019–2020 → 16 docs
-- Test: 2021–2023 → 24 docs
+**Chronological split (fixed):** cuts chosen so all three classes appear in all three sets.
+- Train: 2000–2017 → 145 docs
+- Val: 2018–2021 → 32 docs
+- Test: 2022–2025 → 32 docs
 
-**Key EDA findings (locked):**
-- `hold` = 131 (67.88%), `hike` = 39, `cut` = 23 → F1-macro is the primary metric
-- 100% of docs > 512 words → FinBERT requires explicit truncation strategy
-- Jaccard drift pre/post-2005 = 0.538 → chronological split is mandatory
-- LM Negative score: `cut`=0.0458 vs `hike`=0.0263 (74% higher) → Exp 2 has real signal
+**Key EDA findings:**
+- `hold` = 141 (67.5%), `hike` = 40, `cut` = 28 → F1-macro is the primary metric
+- ~100% of docs > 512 words → FinBERT requires explicit truncation strategy
+- Jaccard drift pre/post-2005 = 0.533 → chronological split is mandatory
+- LM Negative score: `cut`=0.0407 vs `hike`=0.0250 (≈62% higher) → Exp 2 has real signal
+- LM lexicon membership filter is `> 0` (negative year = word removed from category), not `!= 0`
+
+**Results so far (F1-macro, comparison on val):**
+- Baseline (majority): val 0.286, test 0.213
+- Exp 1 TF-IDF (C=10): val 0.519, test 0.213 (overfits train acc 1.0; collapses to `hold` on test)
+- Exp 2 LM lexicon (C=0.01): val 0.489, test 0.154 (detects all 3 classes on val; tone reflects economy state, not the decision → fails on test)
 
 **Experiment plan (locked for 2da entrega):**
 1. **TF-IDF + logistic regression** — `ngram_range=(1,2)`, `max_features=10000`, `sublinear_tf=True`; LogReg L2, C ∈ {0.01, 0.1, 1, 10} grid search on val.
@@ -42,10 +48,12 @@ Academic NLP project (ITBA, 2do cuatrimestre 2026). Group submission for the cou
 - *Chunking with mean pooling*: split into 512-token chunks (optional overlap), average [CLS] embeddings.
 
 **Next steps in order:**
-1. `04_tfidf.ipynb` — Exp 1: TF-IDF + LogReg
-2. `05_lm_lexicon.ipynb` — Exp 2: LM scores + LogReg
+1. ✓ `04_tfidf.ipynb` — Exp 1: TF-IDF + LogReg (done)
+2. ✓ `05_lm_lexicon.ipynb` — Exp 2: LM scores + LogReg (done)
 3. `06_word2vec.ipynb` — Exp 3: Word2Vec mean pooling + LogReg
 4. `07_finbert.ipynb` — Exp 4a + 4b: FinBERT feature extraction + fine-tuning
+5. `08_resultados.ipynb` — comparison table across experiments
+6. Final slides (Objetivos · Metodología · Resultados · Conclusiones · Limitaciones · Anexo)
 
 **Delivery dates:**
 - 2da entrega (sección 6): 2026-05-11 ✓
