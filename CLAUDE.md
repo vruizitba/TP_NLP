@@ -35,6 +35,7 @@ Academic NLP project (ITBA, 2do cuatrimestre 2026). Group submission for the cou
 - Baseline (majority): val 0.286, test 0.213
 - Exp 1 TF-IDF (C=10): val 0.519, test 0.213 (overfits train acc 1.0; collapses to `hold` on test)
 - Exp 2 LM lexicon (C=0.01): val 0.489, test 0.154 (detects all 3 classes on val; tone reflects economy state, not the decision → fails on test)
+- Exp 3 Word2Vec (C=0.1): val 0.606, test 0.337 — best so far, first to improve on test; detects 10/11 hikes out-of-sample (semantics beats vocab drift); still misses 2024–25 normalization cuts. Runs in a Python 3.12 venv (gensim won't build on 3.14).
 
 **Experiment plan (locked for 2da entrega):**
 1. **TF-IDF + logistic regression** — `ngram_range=(1,2)`, `max_features=10000`, `sublinear_tf=True`; LogReg L2, C ∈ {0.01, 0.1, 1, 10} grid search on val.
@@ -50,7 +51,7 @@ Academic NLP project (ITBA, 2do cuatrimestre 2026). Group submission for the cou
 **Next steps in order:**
 1. ✓ `04_tfidf.ipynb` — Exp 1: TF-IDF + LogReg (done)
 2. ✓ `05_lm_lexicon.ipynb` — Exp 2: LM scores + LogReg (done)
-3. `06_word2vec.ipynb` — Exp 3: Word2Vec mean pooling + LogReg
+3. ✓ `06_word2vec.ipynb` — Exp 3: Word2Vec mean pooling + LogReg (done; run in py3.12 venv)
 4. `07_finbert.ipynb` — Exp 4a + 4b: FinBERT feature extraction + fine-tuning
 5. `08_resultados.ipynb` — comparison table across experiments
 6. Final slides (Objetivos · Metodología · Resultados · Conclusiones · Limitaciones · Anexo)
