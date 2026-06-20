@@ -35,7 +35,9 @@ Academic NLP project (ITBA, 2do cuatrimestre 2026). Group submission for the cou
 - Baseline (majority): val 0.286, test 0.213
 - Exp 1 TF-IDF (C=10): val 0.519, test 0.213 (overfits train acc 1.0; collapses to `hold` on test)
 - Exp 2 LM lexicon (C=0.01): val 0.489, test 0.154 (detects all 3 classes on val; tone reflects economy state, not the decision → fails on test)
-- Exp 3 Word2Vec (C=0.1): val 0.606, test 0.337 — best so far, first to improve on test; detects 10/11 hikes out-of-sample (semantics beats vocab drift); still misses 2024–25 normalization cuts. Runs in a Python 3.12 venv (gensim won't build on 3.14).
+- Exp 3 Word2Vec (C=0.1): val 0.606, test 0.337 — first to improve on test; detects 10/11 hikes out-of-sample (semantics beats vocab drift); still misses 2024–25 normalization cuts. Runs in a Python 3.12 venv (gensim won't build on 3.14).
+- Exp 4a FinBERT frozen [CLS] + LogReg (chunking, C=10): val 0.643, test 0.502 — BEST so far, first to detect `cut` in test (2024–25 normalization cuts). Context beats Word2Vec mean pooling. Uses RAW minutes text. Run on Mac venv 3.12 (MPS).
+- Exp 4b FinBERT fine-tuning: PENDING (run on user's GPU).
 
 **Experiment plan (locked for 2da entrega):**
 1. **TF-IDF + logistic regression** — `ngram_range=(1,2)`, `max_features=10000`, `sublinear_tf=True`; LogReg L2, C ∈ {0.01, 0.1, 1, 10} grid search on val.
