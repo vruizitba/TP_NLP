@@ -36,8 +36,10 @@ Academic NLP project (ITBA, 2do cuatrimestre 2026). Group submission for the cou
 - Exp 1 TF-IDF (C=10): val 0.519, test 0.213 (overfits train acc 1.0; collapses to `hold` on test)
 - Exp 2 LM lexicon (C=0.01): val 0.489, test 0.154 (detects all 3 classes on val; tone reflects economy state, not the decision → fails on test)
 - Exp 3 Word2Vec (C=0.1): val 0.606, test 0.337 — first to improve on test; detects 10/11 hikes out-of-sample (semantics beats vocab drift); still misses 2024–25 normalization cuts. Runs in a Python 3.12 venv (gensim won't build on 3.14).
-- Exp 4a FinBERT frozen [CLS] + LogReg (chunking, C=10): val 0.643, test 0.502 — BEST so far, first to detect `cut` in test (2024–25 normalization cuts). Context beats Word2Vec mean pooling. Uses RAW minutes text. Run on Mac venv 3.12 (MPS).
-- Exp 4b FinBERT fine-tuning: PENDING (run on user's GPU).
+- Exp 4a FinBERT frozen [CLS] + LogReg (chunking, C=10): val 0.643, test 0.502. First to detect `cut` in test. chunking > head+tail. Uses RAW minutes text. Run on Mac venv 3.12 (MPS).
+- Exp 4b FinBERT fine-tuning (lr=1e-5, batch=8): val 0.845, test **0.648** — BEST MODEL. Full fine-tuning beats feature extraction (no overfit with 145 docs: low lr + class weights + early stopping). Only model balanced on all 3 classes in test (cut recall 0.83). Run on user's RTX 4070 SUPER (CUDA). Raw results in context/analisis/resultados_exp4_PC.md.
+
+**Final ranking (test F1-macro): FinBERT FT 0.648 > FinBERT frozen 0.502 > Word2Vec 0.337 > TF-IDF 0.213 ≈ baseline > LM 0.154.** Story: lexical → tone → semantics → context+adaptation; each step fixes the previous one's limit.
 
 **Experiment plan (locked for 2da entrega):**
 1. **TF-IDF + logistic regression** — `ngram_range=(1,2)`, `max_features=10000`, `sublinear_tf=True`; LogReg L2, C ∈ {0.01, 0.1, 1, 10} grid search on val.
@@ -54,8 +56,8 @@ Academic NLP project (ITBA, 2do cuatrimestre 2026). Group submission for the cou
 1. ✓ `04_tfidf.ipynb` — Exp 1: TF-IDF + LogReg (done)
 2. ✓ `05_lm_lexicon.ipynb` — Exp 2: LM scores + LogReg (done)
 3. ✓ `06_word2vec.ipynb` — Exp 3: Word2Vec mean pooling + LogReg (done; run in py3.12 venv)
-4. `07_finbert.ipynb` — Exp 4a + 4b: FinBERT feature extraction + fine-tuning
-5. `08_resultados.ipynb` — comparison table across experiments
+4. ✓ `07_finbert.ipynb` — Exp 4a (Mac/MPS) + 4b (user's GPU). Bring executed notebook + 07a/07b figures from PC into repo.
+5. `08_resultados.ipynb` — comparison table across experiments (next)
 6. Final slides (Objetivos · Metodología · Resultados · Conclusiones · Limitaciones · Anexo)
 
 **Delivery dates:**
