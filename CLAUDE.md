@@ -31,15 +31,32 @@ Academic NLP project (ITBA, 2do cuatrimestre 2026). Group submission for the cou
 - LM Negative score: `cut`=0.0407 vs `hike`=0.0250 (≈62% higher) → Exp 2 has real signal
 - LM lexicon membership filter is `> 0` (negative year = word removed from category), not `!= 0`
 
-**Results so far (F1-macro, comparison on val):**
-- Baseline (majority): val 0.286, test 0.213
-- Exp 1 TF-IDF (C=10): val 0.519, test 0.213 (overfits train acc 1.0; collapses to `hold` on test)
-- Exp 2 LM lexicon (C=0.01): val 0.489, test 0.154 (detects all 3 classes on val; tone reflects economy state, not the decision → fails on test)
-- Exp 3 Word2Vec (C=0.1): val 0.606, test 0.337 — first to improve on test; detects 10/11 hikes out-of-sample (semantics beats vocab drift); still misses 2024–25 normalization cuts. Runs in a Python 3.12 venv (gensim won't build on 3.14).
-- Exp 4a FinBERT frozen [CLS] + LogReg (chunking, C=10): val 0.643, test 0.502. First to detect `cut` in test. chunking > head+tail. Uses RAW minutes text. Run on Mac venv 3.12 (MPS).
-- Exp 4b FinBERT fine-tuning (lr=1e-5, batch=8): val 0.845, test **0.648** — BEST MODEL. Full fine-tuning beats feature extraction (no overfit with 145 docs: low lr + class weights + early stopping). Only model balanced on all 3 classes in test (cut recall 0.83). Run on user's RTX 4070 SUPER (CUDA). Raw results in context/analisis/resultados_exp4_PC.md.
+**Anti-leakage masking (notebook 02):** the minutes state the decision explicitly ("the Committee
+decided to raise/lower/maintain... to X percent"). For the X→X task that is leakage, so `mask_decision`
+removes those phrases + decision rate values (~0.7% of text; explicit tell removed in 100% of docs;
+not 100% leakage-free due to garbled 2-column PDF). 02 saves TWO datasets: `fomc_dataset.csv` (masked,
+used by exp 1-4/notebooks 04-08) and `fomc_dataset_unmasked.csv` (used by forecasting notebook 09).
+FinBERT (07) reads RAW minutes and masks in-flight (same function), since it needs natural text.
 
-**Final ranking (test F1-macro): FinBERT FT 0.648 > FinBERT frozen 0.502 > Word2Vec 0.337 > TF-IDF 0.213 ≈ baseline > LM 0.154.** Story: lexical → tone → semantics → context+adaptation; each step fixes the previous one's limit.
+**Results — main TP, X→X on MASKED dataset (F1-macro):**
+- Baseline (majority): val 0.286, test 0.213
+- Exp 1 TF-IDF (C=10): val 0.519, test 0.213 (collapses to `hold` on test; drift)
+- Exp 2 LM lexicon (C=0.01): val 0.524, test 0.154 (tone = economy state, not decision → fails on test)
+- Exp 3 Word2Vec (C=10): val 0.691, test 0.396 — first to generalize (detects hikes); misses cuts. Py3.12 venv (gensim).
+- Exp 4a FinBERT frozen [CLS] + LogReg (head+tail, C=0.01): val 0.610, test 0.484. RAW minutes text. Mac MPS / GPU.
+- Exp 4b FinBERT fine-tuning (lr=1e-5, batch=8): val 0.845, test **0.741** — BEST. Only model balanced on 3 classes in test (cut recall 0.83, hike 0.55, hold 0.87). User's RTX 4070 (CUDA).
+
+**Masking did NOT degrade FinBERT — 4b IMPROVED (0.648 leaky → 0.741 masked).** Proves its result was
+NOT leakage: it infers from the discussion, doesn't read the stated answer. Raw FinBERT results in
+`finbert_resultados.md` (repo root, gitignored).
+
+**Final ranking (test F1-macro): FinBERT FT 0.741 > FinBERT frozen 0.484 > Word2Vec 0.396 > TF-IDF 0.213 ≈ baseline > LM 0.154.** Story: lexical → tone → semantics → context+adaptation; each step fixes the previous one's limit.
+
+**Forecasting extension (notebook 09, X→X+1, UNMASKED dataset):** predict the NEXT meeting's decision.
+Persistence baseline (repeat last decision) = test 0.768; NO model beats it (best FinBERT 4b 0.475;
+classics 0.17–0.30). Monetary policy is highly autocorrelated → text doesn't beat inertia. This
+justifies framing the TP as X→X. FinBERT > classics in forecasting too (some forward-guidance signal),
+but not enough. Figure `reports/figures/09_forecasting_f1.png`. Kept as a presentation slide.
 
 **Experiment plan (locked for 2da entrega):**
 1. **TF-IDF + logistic regression** — `ngram_range=(1,2)`, `max_features=10000`, `sublinear_tf=True`; LogReg L2, C ∈ {0.01, 0.1, 1, 10} grid search on val.
