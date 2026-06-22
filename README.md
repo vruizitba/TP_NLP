@@ -18,8 +18,20 @@ período).
 - **Tasas:** *federal funds target rate* de FRED (St. Louis Fed): `DFEDTAR`
   (pre-2008) y `DFEDTARU` / `DFEDTARL` (régimen de banda post-2008).
 - **209 documentos**, ~8000 palabras promedio cada uno.
-- Dataset final: [`data/processed/fomc_dataset.csv`](data/processed/fomc_dataset.csv)
-  con columnas `date, text, label, split`.
+- Dataset final (enmascarado): [`data/processed/fomc_dataset.csv`](data/processed/fomc_dataset.csv)
+  con columnas `date, text, label, split`. Además se versiona
+  [`data/processed/fomc_dataset_unmasked.csv`](data/processed/fomc_dataset_unmasked.csv)
+  (sin enmascarar), usado por la extensión de *forecasting* (notebook 09).
+
+### Enmascarado anti-leakage
+
+Las minutas declaran la decisión de forma explícita ("the Committee decided to raise/lower/maintain
+… to X percent"). Para la tarea X→X eso es *leakage*, así que el notebook 02 aplica `mask_decision`,
+que elimina esas frases y los valores de tasa de la decisión (~0.7% del texto; el *tell* explícito se
+quita en el 100% de los documentos). Por eso se generan **dos datasets**: el enmascarado
+(`fomc_dataset.csv`, usado por los Exp 1–4 / notebooks 04–08) y el original sin enmascarar
+(`fomc_dataset_unmasked.csv`, usado por el *forecasting*). FinBERT (notebook 07) lee las minutas
+crudas y enmascara al vuelo, porque necesita texto natural.
 
 **Distribución de clases** (desbalanceada → la métrica principal es **F1-macro**):
 
@@ -41,26 +53,39 @@ régimen en las etiquetas; un split aleatorio filtraría información):
 ## Experimentos y resultados
 
 Cinco enfoques, de léxico a contexto+adaptación; cada paso corrige el límite del
-anterior. Métrica: **F1-macro**.
+anterior. Tarea X→X sobre el dataset **enmascarado**. Métrica: **F1-macro**.
 
 | #   | Modelo                              | Val   | Test      |
 |-----|-------------------------------------|-------|-----------|
 | —   | Baseline (clase mayoritaria)        | 0.286 | 0.213     |
 | 1   | TF-IDF + LogReg                     | 0.519 | 0.213     |
-| 2   | Léxico Loughran-McDonald + LogReg   | 0.489 | 0.154     |
-| 3   | Word2Vec (mean pooling) + LogReg    | 0.606 | 0.337     |
-| 4a  | FinBERT `[CLS]` congelado + LogReg  | 0.643 | 0.502     |
-| 4b  | **FinBERT fine-tuning**             | 0.845 | **0.648** |
+| 2   | Léxico Loughran-McDonald + LogReg   | 0.524 | 0.154     |
+| 3   | Word2Vec (mean pooling) + LogReg    | 0.691 | 0.396     |
+| 4a  | FinBERT `[CLS]` congelado + LogReg  | 0.610 | 0.484     |
+| 4b  | **FinBERT fine-tuning**             | 0.845 | **0.741** |
 
-**Ranking final (F1-macro en test):** FinBERT FT `0.648` > FinBERT congelado
-`0.502` > Word2Vec `0.337` > TF-IDF `0.213` ≈ baseline > LM `0.154`.
+**Ranking final (F1-macro en test):** FinBERT FT `0.741` > FinBERT congelado
+`0.484` > Word2Vec `0.396` > TF-IDF `0.213` ≈ baseline > LM `0.154`.
 
 Lecturas clave:
 - TF-IDF sobreajusta el train (acc 1.0) y colapsa a `hold` en test.
 - El léxico LM capta el *tono* (refleja el estado de la economía, no la decisión) → falla en test.
-- Word2Vec es el primero en mejorar en test: la semántica vence al *drift* de vocabulario.
+- Word2Vec es el primero en generalizar en test (0.396): la semántica vence al *drift* de
+  vocabulario; detecta los `hike` pero todavía pierde los `cut`.
 - FinBERT fine-tuned es el único balanceado en las 3 clases en test (recall de `cut` = 0.83);
   bajo *learning rate* + *class weights* + *early stopping* evitan el sobreajuste con sólo 145 docs.
+- **El enmascarado no degradó a FinBERT — el 4b mejoró (`0.648` con *leakage* → `0.741`
+  enmascarado).** Demuestra que su resultado no es *leakage*: infiere de la discusión, no lee la
+  respuesta declarada.
+
+### Extensión: forecasting (X→X+1)
+
+El notebook 09 prueba una tarea distinta: predecir la decisión de la **próxima** reunión a partir
+del acta actual (sobre el dataset sin enmascarar). La baseline de **persistencia** (repetir la última
+decisión) alcanza test **0.768** y **ningún modelo la supera** (mejor FinBERT 4b 0.475; clásicos
+0.17–0.30): la política monetaria es muy inercial y el texto no le gana a la inercia. Esto justifica
+formular el TP como X→X. Figura:
+[`reports/figures/09_forecasting_f1.png`](reports/figures/09_forecasting_f1.png).
 
 ## Estructura del repo
 
@@ -68,16 +93,19 @@ Lecturas clave:
 TP_NLP/
 ├── data/
 │   ├── raw/{minutes,rates}/   # scraping FOMC + CSVs de FRED (contenido gitignored)
-│   └── processed/             # dataset final etiquetado (versionado)
+│   └── processed/             # datasets finales etiquetados (versionados):
+│       ├── fomc_dataset.csv            #   enmascarado (Exp 1–4)
+│       └── fomc_dataset_unmasked.csv   #   sin enmascarar (forecasting)
 ├── notebooks/
 │   ├── 01_data_acquisition.ipynb   # scraping FOMC + FRED
-│   ├── 02_preprocessing.ipynb      # limpieza + construcción de etiquetas
+│   ├── 02_preprocessing.ipynb      # limpieza + etiquetas + enmascarado (2 datasets)
 │   ├── 03_eda.ipynb                # análisis exploratorio
 │   ├── 04_tfidf.ipynb              # Exp 1: TF-IDF + LogReg
 │   ├── 05_lm_lexicon.ipynb         # Exp 2: léxico Loughran-McDonald + LogReg
 │   ├── 06_word2vec.ipynb           # Exp 3: Word2Vec mean pooling + LogReg
 │   ├── 07_finbert.ipynb            # Exp 4a (feature extraction) + 4b (fine-tuning)
-│   └── 08_resultados.ipynb         # comparación de experimentos
+│   ├── 08_resultados.ipynb         # comparación de experimentos
+│   └── 09_forecasting.ipynb        # extensión X→X+1 (predecir la próxima reunión)
 ├── reports/figures/                # figuras para informe / presentación
 ├── requirements.txt
 └── CLAUDE.md
@@ -95,9 +123,9 @@ pip install -r requirements.txt
 python -m ipykernel install --user --name tp_nlp
 ```
 
-Luego ejecutar los notebooks en orden (`01` → `08`). Notas:
+Luego ejecutar los notebooks en orden (`01` → `09`). Notas:
 - `data/raw/` está gitignored (las minutas son pesadas y re-derivables desde
   `01_data_acquisition.ipynb`); `data/processed/` sí está versionado, así que los
-  notebooks de modelado (`04`–`08`) corren sin necesidad de re-scrapear.
+  notebooks de modelado (`04`–`09`) corren sin necesidad de re-scrapear.
 - Word2Vec (Exp 3) requiere un venv con Python 3.12 (gensim no compila en 3.14).
 - FinBERT (Exp 4) se corrió con GPU (CUDA / MPS); en CPU es lento pero funciona.
