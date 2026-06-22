@@ -153,6 +153,7 @@ activemq-data/
 .venv
 .venv*/
 tmp_finbert/
+tmp_finbert_fc/
 env/
 venv/
 ENV/
